@@ -1,0 +1,7 @@
+0.7
+2020.2
+Apr 18 2022
+16:05:34
+C:/praksa/UART_Project/UART_Project.srcs/sim_1/new/uart_tx_tb.vhd,1741773964,vhdl,,,,uart_tx_tb,,,,,,,,
+C:/praksa/UART_Project/UART_Project.srcs/sources_1/new/UART_TX.vhd,1741773024,vhdl,C:/praksa/UART_Project/UART_Project.srcs/sim_1/new/uart_tx_tb.vhd,,,uart_tx,,,,,,,,
+C:/praksa/UART_Project/UART_Project.srcs/sources_1/new/clk_divider.vhd,1741773716,vhdl,C:/praksa/UART_Project/UART_Project.srcs/sources_1/new/UART_TX.vhd,,,clk_divider,,,,,,,,
