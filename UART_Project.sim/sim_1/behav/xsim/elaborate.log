@@ -14,5 +14,6 @@ Compiling package ieee.std_logic_arith
 Compiling package ieee.std_logic_unsigned
 Compiling architecture behavioral of entity xil_defaultlib.clk_divider [clk_divider_default]
 Compiling architecture behavioral of entity xil_defaultlib.uart_tx [uart_tx_default]
+Compiling architecture behavioral of entity xil_defaultlib.TX_TEST [tx_test_default]
 Compiling architecture behavioral of entity xil_defaultlib.uart_tx_tb
 Built simulation snapshot uart_tx_tb_behav

@@ -76,14 +76,16 @@ begin
     end process;
 
     -- next state logic
-    process(state, tx_start, bit_count, uart_clk)
+    process(state, uart_clk)
     begin
         -- by default no change
         next_state <= state;
         case state is
             when IDLE =>
-                if tx_start = '1' then
-                    next_state <= START;
+                if uart_clk = '1' then
+                    if tx_start = '1' then
+                        next_state <= START;
+                    end if;
                 end if;
 
             when START =>

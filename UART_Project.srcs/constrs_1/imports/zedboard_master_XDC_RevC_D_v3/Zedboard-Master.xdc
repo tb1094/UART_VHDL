@@ -79,12 +79,13 @@
 # ----------------------------------------------------------------------------
 # Clock Source - Bank 13
 # ---------------------------------------------------------------------------- 
-#set_property PACKAGE_PIN Y9 [get_ports {GCLK}];  # "GCLK"
+set_property PACKAGE_PIN Y9 [get_ports {CLK}];  # "GCLK"
+create_clock -add -name sys_clk_pin -period 10.00 -waveform {0 5} [get_ports {CLK}];
 
 # ----------------------------------------------------------------------------
 # JA Pmod - Bank 13 
 # ---------------------------------------------------------------------------- 
-#set_property PACKAGE_PIN Y11  [get_ports {JA1}];  # "JA1"
+set_property PACKAGE_PIN Y11  [get_ports { TX }];  # "JA1"
 #set_property PACKAGE_PIN AA11 [get_ports {JA2}];  # "JA2"
 #set_property PACKAGE_PIN Y10  [get_ports {JA3}];  # "JA3"
 #set_property PACKAGE_PIN AA9  [get_ports {JA4}];  # "JA4"
@@ -234,14 +235,14 @@
 ## ----------------------------------------------------------------------------
 ## User DIP Switches - Bank 35
 ## ---------------------------------------------------------------------------- 
-#set_property PACKAGE_PIN F22 [get_ports {SW0}];  # "SW0"
-#set_property PACKAGE_PIN G22 [get_ports {SW1}];  # "SW1"
-#set_property PACKAGE_PIN H22 [get_ports {SW2}];  # "SW2"
-#set_property PACKAGE_PIN F21 [get_ports {SW3}];  # "SW3"
-#set_property PACKAGE_PIN H19 [get_ports {SW4}];  # "SW4"
-#set_property PACKAGE_PIN H18 [get_ports {SW5}];  # "SW5"
-#set_property PACKAGE_PIN H17 [get_ports {SW6}];  # "SW6"
-#set_property PACKAGE_PIN M15 [get_ports {SW7}];  # "SW7"
+set_property PACKAGE_PIN F22 [get_ports { data[0] }];  # "SW0"
+set_property PACKAGE_PIN G22 [get_ports { data[1] }];  # "SW1"
+set_property PACKAGE_PIN H22 [get_ports { data[2] }];  # "SW2"
+set_property PACKAGE_PIN F21 [get_ports { data[3] }];  # "SW3"
+set_property PACKAGE_PIN H19 [get_ports { data[4] }];  # "SW4"
+set_property PACKAGE_PIN H18 [get_ports { data[5] }];  # "SW5"
+set_property PACKAGE_PIN H17 [get_ports { data[6] }];  # "SW6"
+set_property PACKAGE_PIN M15 [get_ports { data[7] }];  # "SW7"
 
 ## ----------------------------------------------------------------------------
 ## XADC AD Channels - Bank 35

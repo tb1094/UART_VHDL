@@ -1,2 +1,4 @@
+INFO: [VRFC 10-163] Analyzing VHDL file "C:/praksa/UART_Project/UART_Project.srcs/sources_1/new/TX_TEST.vhd" into library xil_defaultlib
+INFO: [VRFC 10-3107] analyzing entity 'TX_TEST'
 INFO: [VRFC 10-163] Analyzing VHDL file "C:/praksa/UART_Project/UART_Project.srcs/sim_1/new/uart_tx_tb.vhd" into library xil_defaultlib
 INFO: [VRFC 10-3107] analyzing entity 'uart_tx_tb'

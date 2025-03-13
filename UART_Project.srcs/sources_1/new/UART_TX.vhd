@@ -48,7 +48,7 @@ architecture Behavioral of uart_tx is
     type state_type is (IDLE, START, DATA, STOP);
     signal state, next_state : state_type;
 
-    signal bit_count : integer range 0 to 8 := 0;  -- counter for data bits
+    signal bit_count : integer range 0 to 7 := 0;  -- counter for data bits
     signal shift_reg : std_logic_vector(7 downto 0) := (others => '0'); -- data shift register
 
     signal uart_clk : std_logic; -- clock for uart
@@ -71,74 +71,61 @@ begin
         if reset = '0' then
             state <= IDLE;
         elsif rising_edge(clk) then
-            state <= next_state;
+            if uart_clk = '1' then
+                state <= next_state;
+            end if;
         end if;
     end process;
-
-    -- next state logic
-    process(state, uart_clk)
+    
+    process(state, tx_start, bit_count)
     begin
-        -- by default no change
-        next_state <= state;
+        next_state <= state; -- default state remains unchanged
+
         case state is
             when IDLE =>
-                if uart_clk = '1' then
-                    if tx_start = '1' then
-                        next_state <= START;
-                    end if;
+                if tx_start = '1' then
+                    next_state <= START;
                 end if;
 
             when START =>
-                if uart_clk = '1' then
-                    next_state <= DATA;
-                end if;
+                next_state <= DATA;
 
             when DATA =>
-                if uart_clk = '1' then
-                    if bit_count = 8 then
-                        next_state <= STOP;
-                    else
-                        next_state <= DATA;
-                    end if;
+                if bit_count = 7 then  -- send all 8 bits
+                    next_state <= STOP;
                 end if;
 
             when STOP =>
-                if uart_clk = '1' then
-                    next_state <= IDLE;
-                end if;
+                next_state <= IDLE;
         end case;
     end process;
 
-    -- logic for each state
-    process(state, uart_clk)
+    -- output logic
+    process(clk)
     begin
-        case state is
-            when IDLE =>
-                tx <= '1'; -- UART idle state is high
-                done <= '0';
-                bit_count <= 0;
-                shift_reg <= (others => '0');
+        if rising_edge(clk) then
+            if uart_clk = '1' then
+                case state is
+                    when IDLE =>
+                        tx <= '1'; -- UART idle state is high
+                        done <= '0';
+                        bit_count <= 0;
 
-            when START =>
-                if uart_clk = '1' then
-                    tx <= '0'; -- send start bit
-                    shift_reg <= data_in;
-                    bit_count <= 0;
-                end if;
+                    when START =>
+                        tx <= '0'; -- send start bit
+                        shift_reg <= data_in; -- load data into shift register
 
-            when DATA =>
-                if uart_clk = '1' then
-                    tx <= shift_reg(0); -- shift out the least significant bit
-                    shift_reg <= '0' & shift_reg(7 downto 1); -- shift the register
-                    bit_count <= bit_count + 1; -- increment bit counter
-                end if;
+                    when DATA =>
+                        tx <= shift_reg(0); -- send LSB first
+                        shift_reg <= '0' & shift_reg(7 downto 1); -- shift the register
+                        bit_count <= bit_count + 1;
 
-            when STOP =>
-                if uart_clk = '1' then
-                    tx <= '1'; -- send stop bit
-                    done <= '1'; -- send done signal
-                end if;
-        end case;
+                    when STOP =>
+                        tx <= '1'; -- send stop bit
+                        done <= '1'; -- transmission complete
+                end case;
+            end if;
+        end if;
     end process;
 
 end Behavioral;

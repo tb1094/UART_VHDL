@@ -54,29 +54,27 @@ begin
         wait for 5 ns;
     end process;
     
-    UUT_TX: entity work.uart_tx
+    UUT_TX_TEST: entity work.TX_TEST
     PORT MAP(
         clk => clk,
         reset => reset,
         tx => tx,
-        data_in => data_in,
-        done => done,
-        tx_start => tx_start
+        done => done
     );
     
     process
     begin
-        data_in <= "01010101";
-        wait for 100 ns;
-        tx_start <= '1';
-        wait for 100 ns;
-        tx_start <= '0';
-        wait for 1000 ns;
-        data_in <= "11001100";
-        wait for 100 ns;
-        tx_start <= '1';
-        wait for 100 ns;
-        tx_start <= '0';
+        --data_in <= "01010101";
+        --wait for 10000 ns;
+        --tx_start <= '1';
+        --wait for 5000 ns;
+        --tx_start <= '0';
+        --wait for 20000 ns;
+        --data_in <= "11001100";
+        --wait for 10000 ns;
+        --tx_start <= '1';
+        --wait for 5000 ns;
+        --tx_start <= '0';
         wait;
     end process;
 

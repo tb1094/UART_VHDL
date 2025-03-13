@@ -34,7 +34,7 @@ use IEEE.STD_LOGIC_UNSIGNED.ALL;
 --use UNISIM.VComponents.all;
 
 entity clk_divider is
-    Generic ( divider : NATURAL := 10; -- 115200 Hz from 100 MHz clock
+    Generic ( divider : NATURAL := 86; -- 115200 Hz from 100 MHz clock
 	          size : NATURAL := 10 ); -- we need 10 bits to store 868
     Port ( CLK : in STD_LOGIC;
            RST : in STD_LOGIC;
