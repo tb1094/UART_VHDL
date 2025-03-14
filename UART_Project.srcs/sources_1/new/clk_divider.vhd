@@ -34,8 +34,8 @@ use IEEE.STD_LOGIC_UNSIGNED.ALL;
 --use UNISIM.VComponents.all;
 
 entity clk_divider is
-    Generic ( divider : NATURAL := 868; -- 115200 Hz from 100 MHz clock
-	          size : NATURAL := 10 );
+    Generic ( divider : NATURAL := 10416; -- 9600 Hz from 100 MHz clock
+	          size : NATURAL := 14 );
     Port ( CLK : in STD_LOGIC;
            RST : in STD_LOGIC;
            CE : out STD_LOGIC); -- clock enable signal

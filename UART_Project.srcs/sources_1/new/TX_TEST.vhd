@@ -52,13 +52,13 @@ architecture Behavioral of TX_TEST is
     signal done_sig : std_logic;
     
     signal counter : integer := 0;
-    constant ON_CYCLES  : integer := 1000;
-    constant OFF_CYCLES : integer := 300000;
+    constant ON_CYCLES  : integer := 10;
+    constant OFF_CYCLES : integer := 10000;
     constant PERIOD     : integer := ON_CYCLES + OFF_CYCLES;
     
 begin
 
-    data_sig <= "01010101";
+    data_sig <= "01100001";
     
     uart_tx_inst: entity work.uart_tx
         port map (
@@ -73,6 +73,7 @@ begin
     process(clk, reset_sig)
     begin
         if reset_sig = '0' then
+            reset_sig <= '1';
             counter   <= 0;
             start_sig <= '0';
         elsif rising_edge(clk) then

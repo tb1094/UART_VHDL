@@ -57,9 +57,10 @@ begin
     UUT_TX_TEST: entity work.TX_TEST
     PORT MAP(
         clk => clk,
-        reset => reset,
+        --reset => reset,
         tx => tx,
-        done => done
+        data => data_in
+        --done => done
     );
     
     process
