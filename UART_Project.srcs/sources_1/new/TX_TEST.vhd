@@ -35,11 +35,12 @@ use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 entity TX_TEST is
     Port ( clk : in std_logic;
-           reset : in std_logic;
-           --data : in STD_LOGIC_VECTOR (7 downto 0);
-           tx : out STD_LOGIC;
+           --reset : in std_logic;
+           data : in STD_LOGIC_VECTOR (7 downto 0);
+           tx : out STD_LOGIC
            --start : in std_logic;
-           done : out std_logic);
+           --done : out std_logic
+           );
 end TX_TEST;
 
 architecture Behavioral of TX_TEST is
@@ -47,9 +48,12 @@ architecture Behavioral of TX_TEST is
     signal start_sig : std_logic;
     signal data_sig : std_logic_vector(7 downto 0);
     
+    signal reset_sig : std_logic := '0';
+    signal done_sig : std_logic;
+    
     signal counter : integer := 0;
-    constant ON_CYCLES  : integer := 100;
-    constant OFF_CYCLES : integer := 100000;
+    constant ON_CYCLES  : integer := 1000;
+    constant OFF_CYCLES : integer := 300000;
     constant PERIOD     : integer := ON_CYCLES + OFF_CYCLES;
     
 begin
@@ -59,16 +63,16 @@ begin
     uart_tx_inst: entity work.uart_tx
         port map (
             clk => clk,
-            reset => reset,
+            reset => reset_sig,
             data_in => data_sig,
             tx => tx,
             tx_start => start_sig,
-            done => done
+            done => done_sig
         );
     
-    process(clk, reset)
+    process(clk, reset_sig)
     begin
-        if reset = '0' then
+        if reset_sig = '0' then
             counter   <= 0;
             start_sig <= '0';
         elsif rising_edge(clk) then

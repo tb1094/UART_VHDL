@@ -1,0 +1,13 @@
+#-----------------------------------------------------------
+# Vivado v2022.1 (64-bit)
+# SW Build 3526262 on Mon Apr 18 15:48:16 MDT 2022
+# IP Build 3524634 on Mon Apr 18 20:55:01 MDT 2022
+# Start of session at: Fri Mar 14 12:03:21 2025
+# Process ID: 28196
+# Current directory: C:/praksa/UART_Project/UART_Project.runs/impl_1
+# Command line: vivado.exe -log TX_TEST.vdi -applog -product Vivado -messageDb vivado.pb -mode batch -source TX_TEST.tcl -notrace
+# Log file: C:/praksa/UART_Project/UART_Project.runs/impl_1/TX_TEST.vdi
+# Journal file: C:/praksa/UART_Project/UART_Project.runs/impl_1\vivado.jou
+# Running On: Lemming, OS: Windows, CPU Frequency: 2688 MHz, CPU Physical cores: 10, Host memory: 33951 MB
+#-----------------------------------------------------------
+source TX_TEST.tcl -notrace

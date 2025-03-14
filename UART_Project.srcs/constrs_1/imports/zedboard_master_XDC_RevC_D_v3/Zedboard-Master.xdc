@@ -79,13 +79,13 @@
 # ----------------------------------------------------------------------------
 # Clock Source - Bank 13
 # ---------------------------------------------------------------------------- 
-set_property PACKAGE_PIN Y9 [get_ports {CLK}];  # "GCLK"
-create_clock -add -name sys_clk_pin -period 10.00 -waveform {0 5} [get_ports {CLK}];
+set_property PACKAGE_PIN Y9 [get_ports {clk}];  # "GCLK"
+create_clock -add -name sys_clk_pin -period 10.00 -waveform {0 5} [get_ports {clk}];
 
 # ----------------------------------------------------------------------------
 # JA Pmod - Bank 13 
 # ---------------------------------------------------------------------------- 
-set_property PACKAGE_PIN Y11  [get_ports { TX }];  # "JA1"
+set_property PACKAGE_PIN Y11  [get_ports { tx }];  # "JA1"
 #set_property PACKAGE_PIN AA11 [get_ports {JA2}];  # "JA2"
 #set_property PACKAGE_PIN Y10  [get_ports {JA3}];  # "JA3"
 #set_property PACKAGE_PIN AA9  [get_ports {JA4}];  # "JA4"

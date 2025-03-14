@@ -52,7 +52,6 @@ architecture Behavioral of uart_tx is
     signal shift_reg : std_logic_vector(7 downto 0) := (others => '0'); -- data shift register
 
     signal uart_clk : std_logic; -- clock for uart
-    
     signal clk_div_rst : std_logic;
 
 begin
