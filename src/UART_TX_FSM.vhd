@@ -68,14 +68,14 @@ begin
                 if state = IDLE and DATA_RDY = '1' then
                     start_sig <= '1';
                 end if;
-                if state = DONE then
+                if state = PRE_SEND then
                     start_sig <= '0';
                 end if;
             end if;
         end if;
     end process;
 
-    state_transition: process(state, DATA_RDY, CLK_UART)
+    state_transition: process(state, CLK_UART)
     begin
         next_state <= state;
         case state is

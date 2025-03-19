@@ -63,14 +63,14 @@ begin
         TX => TX_RX_SIG
     );
     
---    UUT_RX: entity work.UART_RX
---    PORT MAP(
---        CLK => CLK,
---        RST => RST,
---        DONE => RX_DONE,
---        DATA => RX_DATA,
---        RX => TX_RX_SIG
---    );
+    UUT_RX: entity work.UART_RX
+    PORT MAP(
+        CLK => CLK,
+        RST => RST,
+        DONE => RX_DONE,
+        DATA => RX_DATA,
+        RX => TX_RX_SIG
+    );
     
     process
     begin

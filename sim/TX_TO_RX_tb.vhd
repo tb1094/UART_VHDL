@@ -2,9 +2,9 @@
 -- Company: 
 -- Engineer: 
 -- 
--- Create Date: 05/25/2024 09:46:43 PM
+-- Create Date: 03/19/2025 12:25:46 PM
 -- Design Name: 
--- Module Name: PISO - Behavioral
+-- Module Name: TX_TO_RX_tb - Behavioral
 -- Project Name: 
 -- Target Devices: 
 -- Tool Versions: 
@@ -31,35 +31,27 @@ use IEEE.STD_LOGIC_1164.ALL;
 --library UNISIM;
 --use UNISIM.VComponents.all;
 
-entity PISO is
-    Port ( CLK : in STD_LOGIC;
-           RST : in STD_LOGIC;
-           SE : in STD_LOGIC;
-           LOAD : in STD_LOGIC;
-           PARALLEL_IN : in STD_LOGIC_VECTOR (9 downto 0);
-           SERIAL_OUT : out STD_LOGIC);
-end PISO;
+entity TX_TO_RX_tb is
+--  Port ( );
+end TX_TO_RX_tb;
 
-architecture Behavioral of PISO is
-
-    signal q: STD_LOGIC_VECTOR(9 downto 0);
-
+architecture Behavioral of TX_TO_RX_tb is
+    signal CLK : std_logic;
+    signal TX_RX_SIG : std_logic;
 begin
 
-	SERIAL_OUT <= q(0);
-
-    process (CLK)
+    process
     begin
-		if rising_edge(CLK) then
-			if RST = '1' then
-				q <= (others => '1');
-			elsif LOAD = '1' then
-                q <= PARALLEL_IN;
-            elsif SE = '1' then
-                q <= '1' & q(9 downto 1);
-			end if;
-		end if;
-	end process;
-
+        CLK <= '1';
+        wait for 5 ns;
+        CLK <= '0';
+        wait for 5 ns;
+    end process;
+    
+    UUT_TX_TO_RX: entity work.TX_TO_RX
+    PORT MAP(
+        CLK => CLK,
+        TX_RX => TX_RX_SIG
+    );
 
 end Behavioral;

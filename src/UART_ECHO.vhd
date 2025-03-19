@@ -36,8 +36,8 @@ entity UART_ECHO is
            RST : in STD_LOGIC;
            RX : in STD_LOGIC;
            TX : out STD_LOGIC;
-           DONE_OUT : out STD_LOGIC;
-           TX_START : in STD_LOGIC);
+           DONE_OUT : out STD_LOGIC);
+           --TX_START : in STD_LOGIC);
 end UART_ECHO;
 
 architecture Behavioral of UART_ECHO is
@@ -54,7 +54,7 @@ begin
     PORT MAP(
 		CLK => CLK,
 		RST => RST,
-		DATA_RDY => TX_START,
+		DATA_RDY => RX_DONE_SIG,
 		DATA_IN => DATA,
 		DONE_OUT => DONE_OUT,
 		TX => TX
@@ -69,18 +69,18 @@ begin
 		RX => RX
 	);
 	
-	process(CLK, RST)
-    begin
-        if RST = '1' then
-            TX_START_SIG <= '0';
-        elsif rising_edge(CLK) then
-            if RX_DONE_SIG = '1' then
-                TX_START_SIG <= '1';
-            else
-                TX_START_SIG <= '0';
-            end if;
-        end if;
-    end process;
+--	process(CLK, RST)
+--    begin
+--        if RST = '1' then
+--            TX_START_SIG <= '0';
+--        elsif rising_edge(CLK) then
+--            if RX_DONE_SIG = '1' then
+--                TX_START_SIG <= '1';
+--            else
+--                TX_START_SIG <= '0';
+--            end if;
+--        end if;
+--    end process;
 
 
 end Behavioral;

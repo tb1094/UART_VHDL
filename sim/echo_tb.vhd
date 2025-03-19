@@ -57,8 +57,8 @@ begin
         RST => RST,
         TX => TX_SIG,
         RX => RX_SIG,
-        DONE_OUT => DONE_SIG,
-        TX_START => TX_START_SIG
+        DONE_OUT => DONE_SIG
+        --TX_START => TX_START_SIG
     );
     
     process
@@ -67,27 +67,27 @@ begin
         wait for 416640 ns;
         RX_SIG <= '0'; -- start bit
         wait for 104160 ns;
-        RX_SIG <= '1'; -- data bit 0
+        RX_SIG <= '0'; -- data bit 0
         wait for 104160 ns;
-        RX_SIG <= '0';
+        RX_SIG <= '0'; -- data bit 1
         wait for 104160 ns;
-        RX_SIG <= '1';
+        RX_SIG <= '1'; -- data bit 2
         wait for 104160 ns;
-        RX_SIG <= '0';
+        RX_SIG <= '0'; -- data bit 3
         wait for 104160 ns;
-        RX_SIG <= '1';
+        RX_SIG <= '1'; -- data bit 4
         wait for 104160 ns;
-        RX_SIG <= '0';
+        RX_SIG <= '0'; -- data bit 5
         wait for 104160 ns;
-        RX_SIG <= '1';
+        RX_SIG <= '1'; -- data bit 6
         wait for 104160 ns;
         RX_SIG <= '0'; -- data bit 7
         wait for 104160 ns;
         RX_SIG <= '1'; -- stop bit
-        wait for 217056 ns;
-        TX_START_SIG <= '1';
-        wait for 10000 ns;
-        TX_START_SIG <= '0';
+--        wait for 217056 ns;
+--        TX_START_SIG <= '1';
+--        wait for 10000 ns;
+--        TX_START_SIG <= '0';
         wait;
     end process;
 
