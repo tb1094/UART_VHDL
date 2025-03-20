@@ -37,7 +37,6 @@ end echo_tb;
 
 architecture Behavioral of echo_tb is
     signal CLK : std_logic := '0';
-    signal RST : std_logic;
     signal TX_SIG : std_logic;
     signal RX_SIG : std_logic;
     signal DONE_SIG : std_logic;
@@ -54,40 +53,51 @@ begin
     UUT_UART_ECHO: entity work.UART_ECHO
     PORT MAP(
         CLK => CLK,
-        RST => RST,
         TX => TX_SIG,
         RX => RX_SIG,
         DONE_OUT => DONE_SIG
-        --TX_START => TX_START_SIG
     );
     
     process
+        procedure send_byte(signal RX_SIG : out std_logic; data : in std_logic_vector(7 downto 0); bit_period : time) is
+        begin
+            RX_SIG <= '0'; -- start bit
+            wait for bit_period;
+        
+            for i in 0 to 7 loop
+                RX_SIG <= data(i);
+                wait for bit_period;
+            end loop;
+        
+            RX_SIG <= '1'; -- stop bit
+            wait for bit_period;
+        end procedure;
     begin
         RX_SIG <= '1'; -- idle high
         wait for 416640 ns;
-        RX_SIG <= '0'; -- start bit
+        -- send 0x55
+        send_byte(RX_SIG, "01010101", 104160 ns);
         wait for 104160 ns;
-        RX_SIG <= '0'; -- data bit 0
+        -- send 0x00
+        send_byte(RX_SIG, "00000000", 104160 ns);
         wait for 104160 ns;
-        RX_SIG <= '0'; -- data bit 1
+        -- send 0x55
+        send_byte(RX_SIG, "01011101", 104160 ns);
         wait for 104160 ns;
-        RX_SIG <= '1'; -- data bit 2
+        -- send 0x55
+        send_byte(RX_SIG, "01110100", 104160 ns);
         wait for 104160 ns;
-        RX_SIG <= '0'; -- data bit 3
+        -- send 0x55
+        send_byte(RX_SIG, "01010101", 104160 ns);
         wait for 104160 ns;
-        RX_SIG <= '1'; -- data bit 4
+        -- send 0x55
+        send_byte(RX_SIG, "11110101", 104160 ns);
         wait for 104160 ns;
-        RX_SIG <= '0'; -- data bit 5
+        -- send 0x55
+        send_byte(RX_SIG, "01010101", 104160 ns);
         wait for 104160 ns;
-        RX_SIG <= '1'; -- data bit 6
-        wait for 104160 ns;
-        RX_SIG <= '0'; -- data bit 7
-        wait for 104160 ns;
-        RX_SIG <= '1'; -- stop bit
---        wait for 217056 ns;
---        TX_START_SIG <= '1';
---        wait for 10000 ns;
---        TX_START_SIG <= '0';
+        -- send 0x55
+        send_byte(RX_SIG, "01010101", 104160 ns);
         wait;
     end process;
 

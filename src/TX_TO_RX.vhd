@@ -32,7 +32,9 @@ use IEEE.STD_LOGIC_1164.ALL;
 --use UNISIM.VComponents.all;
 
 entity TX_TO_RX is
-    Port ( CLK : in STD_LOGIC
+    Port ( CLK : in STD_LOGIC;
+           --LD0 : out STD_LOGIC;
+           RX_DATA_OUT : out STD_LOGIC_VECTOR(7 downto 0)
            );
 end TX_TO_RX;
 
@@ -55,6 +57,8 @@ architecture Behavioral of TX_TO_RX is
 begin
 
     TX_DATA <= "01010101";
+    
+    RX_DATA_OUT <= RX_DATA;
 
     TX_INST: entity work.UART_TX
     PORT MAP(
