@@ -64,6 +64,11 @@ begin
                 state <= IDLE;
             else
                 state <= next_state;
+                if (state /= DONE) and (next_state = DONE) then
+                    DONE_OUT <= '1';
+                else
+                    DONE_OUT <= '0';
+                end if;
             end if;
         end if;
     end process;
@@ -127,56 +132,43 @@ begin
     begin
         RST_CLK_DIV <= '0';
         RECEIVING <= '0';
-        DONE_OUT <= '0';
         case state is
             when IDLE =>
                 RST_CLK_DIV <= '0';
                 RECEIVING <= '0';
-                DONE_OUT <= '0';
             when START => 
                 RST_CLK_DIV <= '1';
                 RECEIVING <= '0';
-                DONE_OUT <= '0';
             when START_BIT =>
                 RST_CLK_DIV <= '0';
                 RECEIVING <= '1';
-                DONE_OUT <= '0';
 			when BIT0 =>
                 RST_CLK_DIV <= '0';
                 RECEIVING <= '1';
-                DONE_OUT <= '0';
 			when BIT1 =>
                 RST_CLK_DIV <= '0';
                 RECEIVING <= '1';
-                DONE_OUT <= '0';
 			when BIT2 =>
                 RST_CLK_DIV <= '0';
                 RECEIVING <= '1';
-                DONE_OUT <= '0';
 			when BIT3 =>
                 RST_CLK_DIV <= '0';
                 RECEIVING <= '1';
-                DONE_OUT <= '0';
 			when BIT4 =>
                 RST_CLK_DIV <= '0';
                 RECEIVING <= '1';
-                DONE_OUT <= '0';
 			when BIT5 =>
                 RST_CLK_DIV <= '0';
                 RECEIVING <= '1';
-                DONE_OUT <= '0';
 			when BIT6 =>
                 RST_CLK_DIV <= '0';
                 RECEIVING <= '1';
-                DONE_OUT <= '0';
 			when BIT7 =>
                 RST_CLK_DIV <= '0';
                 RECEIVING <= '1';
-                DONE_OUT <= '0';
 			when DONE =>
                 RST_CLK_DIV <= '0';
                 RECEIVING <= '0';
-                DONE_OUT <= '1';
         end case;
     end process;
 

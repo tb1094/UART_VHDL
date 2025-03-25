@@ -46,18 +46,21 @@ architecture Behavioral of UART_TX is
     signal CLK_UART_SIG: std_logic;
     signal PISO_DATA_IN: std_logic_vector(9 downto 0);
     signal SHIFT_OUT_SIG: std_logic;
-
+    signal FSM_BUSY: std_logic;
+    signal LOAD_PISO: std_logic;
+    
 begin
 
     PISO_DATA_IN <= DATA_IN & "01";
     SE_SIG <= CLK_UART_SIG and SHIFT_OUT_SIG;
+    LOAD_PISO <= DATA_RDY and not FSM_BUSY;
 
     PISO_Inst: entity work.PISO
     PORT MAP(
 		CLK => CLK,
 		RST => RST,
 		SE => SE_SIG,
-		LOAD => DATA_RDY,
+		LOAD => LOAD_PISO,
 		PARALLEL_IN => PISO_DATA_IN,
 		SERIAL_OUT => TX
 	);
@@ -76,7 +79,8 @@ begin
 		CLK_UART => CLK_UART_SIG,
 		DATA_RDY => DATA_RDY,
 		DONE_OUT => DONE_OUT,
-		SHIFT_OUT => SHIFT_OUT_SIG
+		SHIFT_OUT => SHIFT_OUT_SIG,
+		BUSY => FSM_BUSY
 	);
 
 end Behavioral;

@@ -37,7 +37,8 @@ entity UART_TX_FSM is
            CLK_UART : in STD_LOGIC;
            DATA_RDY : in STD_LOGIC;
            DONE_OUT : out STD_LOGIC;
-           SHIFT_OUT : out STD_LOGIC);
+           SHIFT_OUT : out STD_LOGIC;
+           BUSY : out STD_LOGIC);
 end UART_TX_FSM;
 
 architecture Behavioral of UART_TX_FSM is
@@ -67,9 +68,13 @@ begin
                 state <= next_state;
                 if state = IDLE and DATA_RDY = '1' then
                     start_sig <= '1';
-                end if;
-                if state = PRE_SEND then
+                elsif state = PRE_SEND then
                     start_sig <= '0';
+                end if;
+                if (state /= DONE) and (next_state = DONE) then
+                    DONE_OUT <= '1';
+                else
+                    DONE_OUT <= '0';
                 end if;
             end if;
         end if;
@@ -135,43 +140,43 @@ begin
     output_decode: process(state)
     begin
         SHIFT_OUT <= '0';
-        DONE_OUT <= '0';
+        BUSY <= '0';
         case state is
             when IDLE =>
                 SHIFT_OUT <= '0';
-                DONE_OUT <= '0';
+                BUSY <= '0';
             when PRE_SEND =>
                 SHIFT_OUT <= '1';
-                DONE_OUT <= '0';
+                BUSY <= '1';
             when SEND_START =>
                 SHIFT_OUT <= '1';
-				DONE_OUT <= '0';
+				BUSY <= '1';
 			when SEND_BIT0 =>
                 SHIFT_OUT <= '1';
-				DONE_OUT <= '0';
+				BUSY <= '1';
 			when SEND_BIT1 =>
                 SHIFT_OUT <= '1';
-				DONE_OUT <= '0';
+				BUSY <= '1';
 			when SEND_BIT2 =>
                 SHIFT_OUT <= '1';
-				DONE_OUT <= '0';
+				BUSY <= '1';
 			when SEND_BIT3 =>
                 SHIFT_OUT <= '1';
-				DONE_OUT <= '0';
+				BUSY <= '1';
 			when SEND_BIT4 =>
                 SHIFT_OUT <= '1';
-				DONE_OUT <= '0';
+				BUSY <= '1';
 			when SEND_BIT5 =>
                 SHIFT_OUT <= '1';
-				DONE_OUT <= '0';
+				BUSY <= '1';
 			when SEND_BIT6 =>
                 SHIFT_OUT <= '1';
-				DONE_OUT <= '0';
+				BUSY <= '1';
 			when SEND_BIT7 =>
                 SHIFT_OUT <= '1';
-				DONE_OUT <= '0';
+				BUSY <= '1';
 			when DONE =>
-				DONE_OUT <= '1';
+				BUSY <= '1';
         end case;
     end process;
 
