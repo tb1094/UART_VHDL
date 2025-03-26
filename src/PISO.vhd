@@ -2,7 +2,7 @@
 -- Company: 
 -- Engineer: 
 -- 
--- Create Date: 05/25/2024 09:46:43 PM
+-- Create Date: 03/11/2025 11:16:19 AM
 -- Design Name: 
 -- Module Name: PISO - Behavioral
 -- Project Name: 
@@ -42,24 +42,23 @@ end PISO;
 
 architecture Behavioral of PISO is
 
-    signal q: STD_LOGIC_VECTOR(9 downto 0);
+    signal q: STD_LOGIC_VECTOR(9 downto 0) := (others => '1');
 
 begin
 
-	SERIAL_OUT <= q(0);
+    SERIAL_OUT <= q(0);
 
     process (CLK)
     begin
-		if rising_edge(CLK) then
-			if RST = '1' then
-				q <= (others => '1');
-			elsif LOAD = '1' then
+        if rising_edge(CLK) then
+            if RST = '1' then
+                q <= (others => '1');
+            elsif LOAD = '1' then
                 q <= PARALLEL_IN;
             elsif SE = '1' then
                 q <= '1' & q(9 downto 1);
-			end if;
-		end if;
-	end process;
-
+            end if;
+        end if;
+    end process;
 
 end Behavioral;

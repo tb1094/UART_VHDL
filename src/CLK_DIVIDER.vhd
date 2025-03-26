@@ -2,7 +2,7 @@
 -- Company: 
 -- Engineer: 
 -- 
--- Create Date: 05/25/2024 10:08:14 PM
+-- Create Date: 03/11/2025 11:38:10 AM
 -- Design Name: 
 -- Module Name: CLK_DIVIDER - Behavioral
 -- Project Name: 
@@ -46,21 +46,21 @@ architecture Behavioral of CLK_DIVIDER is
 
 begin
 
-	CE <= '1' when q = divider - 1 else '0';
+    CE <= '1' when q = divider - 1 else '0';
 	
 	process (CLK)
 	begin
-		if rising_edge(CLK) then
-			if RST = '1' then
-				q <= (others => '0');
-			else
-				if q < divider - 1 then
-					q <= q + 1;
-				else
-					q <= (others => '0');
-				end if;
-			end if;
-		end if;
-	end process;
+        if rising_edge(CLK) then
+            if RST = '1' then
+                q <= (others => '0');
+            else
+                if q < divider - 1 then
+                    q <= q + 1;
+                else
+                    q <= (others => '0');
+                end if;
+            end if;
+        end if;
+    end process;
 
 end Behavioral;

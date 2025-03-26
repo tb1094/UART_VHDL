@@ -112,6 +112,12 @@ begin
         WR_UART_SIG <= '1';
         wait for 15 ns;
         WR_UART_SIG <= '0';
+        wait until TX_FULL_SIG = '0';
+        -- tell TX to send 0x00
+        W_DATA_SIG <= "00000000";
+        WR_UART_SIG <= '1';
+        wait for 15 ns;
+        WR_UART_SIG <= '0';
         wait;
     end process;
 

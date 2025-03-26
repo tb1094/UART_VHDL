@@ -2,7 +2,7 @@
 -- Company: 
 -- Engineer: 
 -- 
--- Create Date: 05/29/2024 09:22:50 PM
+-- Create Date: 03/17/2025 09:31:33 AM
 -- Design Name: 
 -- Module Name: UART_RX_FSM - Behavioral
 -- Project Name: 

@@ -2,7 +2,7 @@
 -- Company: 
 -- Engineer: 
 -- 
--- Create Date: 05/29/2024 10:06:04 PM
+-- Create Date: 03/19/2025 02:47:12 PM
 -- Design Name: 
 -- Module Name: UART_ECHO - Behavioral
 -- Project Name: 

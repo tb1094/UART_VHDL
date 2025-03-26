@@ -2,7 +2,7 @@
 -- Company: 
 -- Engineer: 
 -- 
--- Create Date: 05/25/2024 10:35:50 PM
+-- Create Date: 03/11/2025 12:45:34 AM
 -- Design Name: 
 -- Module Name: UART_TX_FSM - Behavioral
 -- Project Name: 
@@ -38,7 +38,8 @@ entity UART_TX_FSM is
            DATA_RDY : in STD_LOGIC;
            DONE_OUT : out STD_LOGIC;
            SHIFT_OUT : out STD_LOGIC;
-           BUSY : out STD_LOGIC);
+           LOAD_DATA : out STD_LOGIC;
+           RST_CLK_DIV : out STD_LOGIC);
 end UART_TX_FSM;
 
 architecture Behavioral of UART_TX_FSM is
@@ -51,8 +52,7 @@ architecture Behavioral of UART_TX_FSM is
                         SEND_BIT4,
                         SEND_BIT5,
                         SEND_BIT6,
-                        SEND_BIT7,
-                        DONE);
+                        SEND_BIT7);
     signal state, next_state: state_type;
     signal start_sig : std_logic := '0';
 
@@ -71,21 +71,26 @@ begin
                 elsif state = PRE_SEND then
                     start_sig <= '0';
                 end if;
-                if (state /= DONE) and (next_state = DONE) then
+                if (state /= SEND_BIT7) and (next_state = SEND_BIT7) then
                     DONE_OUT <= '1';
                 else
                     DONE_OUT <= '0';
+                end if;
+                if (state /= PRE_SEND) and (next_state = PRE_SEND) then
+                    LOAD_DATA <= '1';
+                else
+                    LOAD_DATA <= '0';
                 end if;
             end if;
         end if;
     end process;
 
-    state_transition: process(state, CLK_UART)
+    state_transition: process(state, CLK_UART, start_sig)
     begin
         next_state <= state;
         case state is
             when IDLE =>
-                if start_sig = '1' and CLK_UART = '1' then
+                if start_sig = '1' then
                     next_state <= PRE_SEND;
                 else
                     next_state <= IDLE;
@@ -128,10 +133,6 @@ begin
                 end if;
             when SEND_BIT7 =>
                 if CLK_UART = '1' then
-                    next_state <= DONE;
-                end if;
-            when DONE =>
-                if CLK_UART = '1' then
                     next_state <= IDLE;
                 end if;
         end case;
@@ -140,43 +141,41 @@ begin
     output_decode: process(state)
     begin
         SHIFT_OUT <= '0';
-        BUSY <= '0';
+        RST_CLK_DIV <= '0';
         case state is
             when IDLE =>
                 SHIFT_OUT <= '0';
-                BUSY <= '0';
+                RST_CLK_DIV <= '1';
             when PRE_SEND =>
                 SHIFT_OUT <= '1';
-                BUSY <= '1';
+                RST_CLK_DIV <= '0';
             when SEND_START =>
                 SHIFT_OUT <= '1';
-				BUSY <= '1';
+                RST_CLK_DIV <= '0';
 			when SEND_BIT0 =>
                 SHIFT_OUT <= '1';
-				BUSY <= '1';
+                RST_CLK_DIV <= '0';
 			when SEND_BIT1 =>
                 SHIFT_OUT <= '1';
-				BUSY <= '1';
+                RST_CLK_DIV <= '0';
 			when SEND_BIT2 =>
                 SHIFT_OUT <= '1';
-				BUSY <= '1';
+                RST_CLK_DIV <= '0';
 			when SEND_BIT3 =>
                 SHIFT_OUT <= '1';
-				BUSY <= '1';
+                RST_CLK_DIV <= '0';
 			when SEND_BIT4 =>
                 SHIFT_OUT <= '1';
-				BUSY <= '1';
+                RST_CLK_DIV <= '0';
 			when SEND_BIT5 =>
                 SHIFT_OUT <= '1';
-				BUSY <= '1';
+                RST_CLK_DIV <= '0';
 			when SEND_BIT6 =>
                 SHIFT_OUT <= '1';
-				BUSY <= '1';
+                RST_CLK_DIV <= '0';
 			when SEND_BIT7 =>
                 SHIFT_OUT <= '1';
-				BUSY <= '1';
-			when DONE =>
-				BUSY <= '1';
+                RST_CLK_DIV <= '0';
         end case;
     end process;
 

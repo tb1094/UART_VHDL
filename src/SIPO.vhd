@@ -2,7 +2,7 @@
 -- Company: 
 -- Engineer: 
 -- 
--- Create Date: 05/29/2024 09:13:03 PM
+-- Create Date: 03/17/2025 08:56:44 AM
 -- Design Name: 
 -- Module Name: SIPO - Behavioral
 -- Project Name: 
@@ -49,13 +49,13 @@ begin
 
     process (CLK)
     begin
-		if rising_edge(CLK) then
-			if RST = '1' then
-				q <= (others => '0');
+        if rising_edge(CLK) then
+            if RST = '1' then
+                q <= (others => '0');
             elsif SE = '1' then
                 q <= SERIAL_IN & q(7 downto 1);
-			end if;
-		end if;
-	end process;
+            end if;
+        end if;
+    end process;
 
 end Behavioral;

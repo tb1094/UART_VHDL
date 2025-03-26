@@ -2,7 +2,7 @@
 -- Company: 
 -- Engineer: 
 -- 
--- Create Date: 05/25/2024 11:05:34 PM
+-- Create Date: 03/11/2025 12:51:44 AM
 -- Design Name: 
 -- Module Name: UART_TX - Behavioral
 -- Project Name: 
@@ -46,21 +46,20 @@ architecture Behavioral of UART_TX is
     signal CLK_UART_SIG: std_logic;
     signal PISO_DATA_IN: std_logic_vector(9 downto 0);
     signal SHIFT_OUT_SIG: std_logic;
-    signal FSM_BUSY: std_logic;
-    signal LOAD_PISO: std_logic;
+    signal LOAD_DATA_SIG: std_logic;
+    signal RST_CLK_DIV_SIG: std_logic;
     
 begin
 
     PISO_DATA_IN <= DATA_IN & "01";
     SE_SIG <= CLK_UART_SIG and SHIFT_OUT_SIG;
-    LOAD_PISO <= DATA_RDY and not FSM_BUSY;
 
     PISO_Inst: entity work.PISO
     PORT MAP(
 		CLK => CLK,
 		RST => RST,
 		SE => SE_SIG,
-		LOAD => LOAD_PISO,
+		LOAD => LOAD_DATA_SIG,
 		PARALLEL_IN => PISO_DATA_IN,
 		SERIAL_OUT => TX
 	);
@@ -68,7 +67,7 @@ begin
 	CLK_DIVIDER_Inst: entity work.CLK_DIVIDER
     PORT MAP(
 		CLK => CLK,
-		RST => RST,
+		RST => RST_CLK_DIV_SIG,
 		CE => CLK_UART_SIG
 	);
 	
@@ -80,7 +79,8 @@ begin
 		DATA_RDY => DATA_RDY,
 		DONE_OUT => DONE_OUT,
 		SHIFT_OUT => SHIFT_OUT_SIG,
-		BUSY => FSM_BUSY
+		LOAD_DATA => LOAD_DATA_SIG,
+		RST_CLK_DIV => RST_CLK_DIV_SIG
 	);
 
 end Behavioral;

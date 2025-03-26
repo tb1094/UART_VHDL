@@ -2,7 +2,7 @@
 -- Company: 
 -- Engineer: 
 -- 
--- Create Date: 05/29/2024 09:42:59 PM
+-- Create Date: 03/17/2025 10:15:58 AM
 -- Design Name: 
 -- Module Name: UART_RX - Behavioral
 -- Project Name: 

@@ -2,7 +2,7 @@
 -- Company: 
 -- Engineer: 
 -- 
--- Create Date: 05/29/2024 08:56:05 PM
+-- Create Date: 03/17/2025 08:45:34 AM
 -- Design Name: 
 -- Module Name: CLK_DIVIDER_RX - Behavioral
 -- Project Name: 
@@ -47,21 +47,21 @@ architecture Behavioral of CLK_DIVIDER_RX is
 
 begin
 
-	CE <= '1' when q = divider - 1 else '0';
+    CE <= '1' when q = divider - 1 else '0';
 	
-	process (CLK)
-	begin
-		if rising_edge(CLK) then
-			if RST = '1' then
-				q <= '0' & conv_std_logic_vector(divider,size)(size-1 downto 1); -- q = divider/2
-			else
-				if q < divider - 1 then
-					q <= q + 1;
-				else
-					q <= (others => '0');
-				end if;
-			end if;
-		end if;
-	end process;
+    process (CLK)
+    begin
+        if rising_edge(CLK) then
+            if RST = '1' then
+                q <= '0' & conv_std_logic_vector(divider,size)(size-1 downto 1); -- q = divider/2
+            else
+                if q < divider - 1 then
+                    q <= q + 1;
+                else
+                    q <= (others => '0');
+                end if;
+            end if;
+        end if;
+    end process;
 
 end Behavioral;
