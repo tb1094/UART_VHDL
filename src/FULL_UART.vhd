@@ -72,12 +72,12 @@ begin
     PORT MAP(
         CLK => CLK,
         RST => RST,
-	    W_DATA => RX_DATA,
-	    R_DATA => R_DATA,
-	    WR => RX_DONE,
-	    RD => RD_UART,
-	    full => open,
-	    empty => RX_EMPTY
+        W_DATA => RX_DATA,
+        R_DATA => R_DATA,
+        WR => RX_DONE,
+        RD => RD_UART,
+        full => open,
+        empty => RX_EMPTY
 	);
 
     TX_Inst: entity work.UART_TX
@@ -94,12 +94,12 @@ begin
     PORT MAP(
         CLK => CLK,
         RST => RST,
-	    W_DATA => W_DATA,
-	    R_DATA => TX_DATA,
-	    WR => WR_UART,
-	    RD => TX_DONE,
-	    full => TX_FULL,
-	    empty => TX_EMPTY
+        W_DATA => W_DATA,
+        R_DATA => TX_DATA,
+        WR => WR_UART,
+        RD => TX_DONE,
+        full => TX_FULL,
+        empty => TX_EMPTY
     );
 	
     process(CLK)
