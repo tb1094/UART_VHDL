@@ -61,15 +61,15 @@ begin
 
     RX_Inst: entity work.UART_RX
     PORT MAP(
-		CLK => CLK,
-		RST => RST,
-		DONE => RX_DONE,
-		DATA => RX_DATA,
-		RX => RX_2
-	);
+        CLK => CLK,
+        RST => RST,
+        DONE => RX_DONE,
+        DATA => RX_DATA,
+        RX => RX_2
+    );
 	
-	RX_BUFFER_Inst: entity work.BUFFER_REG
-	PORT MAP(
+    RX_BUFFER_Inst: entity work.BUFFER_REG
+    PORT MAP(
         CLK => CLK,
         RST => RST,
 	    W_DATA => RX_DATA,
@@ -82,16 +82,16 @@ begin
 
     TX_Inst: entity work.UART_TX
     PORT MAP(
-		CLK => CLK,
-		RST => RST,
-		DATA_RDY => not TX_EMPTY,
-		DATA_IN => TX_DATA,
-		DONE_OUT => TX_DONE,
-		TX => TX
-	);
+        CLK => CLK,
+        RST => RST,
+        DATA_RDY => not TX_EMPTY,
+        DATA_IN => TX_DATA,
+        DONE_OUT => TX_DONE,
+        TX => TX
+    );
 	
-	TX_BUFFER_Inst: entity work.BUFFER_REG
-	PORT MAP(
+    TX_BUFFER_Inst: entity work.BUFFER_REG
+    PORT MAP(
         CLK => CLK,
         RST => RST,
 	    W_DATA => W_DATA,
@@ -100,12 +100,12 @@ begin
 	    RD => TX_DONE,
 	    full => TX_FULL,
 	    empty => TX_EMPTY
-	);
+    );
 	
-	process(CLK)
-	begin
-	   if rising_edge(CLK) then
-	       if (RST = '1') then
+    process(CLK)
+    begin
+       if rising_edge(CLK) then
+           if (RST = '1') then
                 RX_1 <= '1';
                 RX_2 <= '1';
             else
@@ -113,6 +113,6 @@ begin
                 RX_2 <= RX_1;
             end if;
 	   end if;
-	end process;
+    end process;
 
 end Behavioral;
