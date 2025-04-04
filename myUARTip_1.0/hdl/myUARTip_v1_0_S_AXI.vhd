@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity Custom_UART_v1_0_S_AXI is
+entity myUARTip_v1_0_S_AXI is
 	generic (
 		-- Users to add parameters here
 
@@ -18,6 +18,7 @@ entity Custom_UART_v1_0_S_AXI is
 		-- Users to add ports here
         RX : in std_logic;
         TX : out std_logic;
+        irq	: out std_logic := '0';
 		-- User ports ends
 		-- Do not modify the ports beyond this line
 
@@ -82,9 +83,9 @@ entity Custom_UART_v1_0_S_AXI is
     		-- accept the read data and response information.
 		S_AXI_RREADY	: in std_logic
 	);
-end Custom_UART_v1_0_S_AXI;
+end myUARTip_v1_0_S_AXI;
 
-architecture arch_imp of Custom_UART_v1_0_S_AXI is
+architecture arch_imp of myUARTip_v1_0_S_AXI is
 
 	-- AXI4LITE signals
 	signal axi_awaddr	: std_logic_vector(C_S_AXI_ADDR_WIDTH-1 downto 0);
@@ -118,8 +119,8 @@ architecture arch_imp of Custom_UART_v1_0_S_AXI is
 	signal reg_data_out	:std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 	signal byte_index	: integer;
 	signal aw_en	: std_logic;
-	
-	-- UART signals
+
+    -- UART signals
 	
 	-- read signals
     signal uart_r_data : std_logic_vector(7 downto 0); -- data received from RX line
@@ -131,12 +132,17 @@ architecture arch_imp of Custom_UART_v1_0_S_AXI is
     signal uart_wr_uart : std_logic; -- w_data is ready, send it
     signal uart_tx_full : std_logic; -- TX buffer is full (there is something to send)
     
+    -- for interrupts
+    signal uart_rx_empty_prev : std_logic := '1';
+    signal uart_tx_full_prev : std_logic := '0';
+    signal intr_det : std_logic := '0';
+    
     -- UART mapping to registers
     
-    -- slv_reg0 - w_data (bit 7 to bit 0)
-    -- slv_reg1 - r_data (bit 7 to bit 0)
-    -- slv_reg2 - status register; bit 0: rx_empty, bit 1: tx_full
-    -- slv_reg3 - control register; bit 0: wr_uart, bit 1: rd_uart
+    -- slv_reg0 - r_data (bit 7 to bit 0)
+    -- slv_reg1 - w_data (bit 7 to bit 0)
+    -- slv_reg2 - status register; bit 0: rx_empty, bit 1: tx_full, bit 2: interrupt status
+    -- slv_reg3 - control register; bit 0: rd_uart, bit 1: wr_uart, bit 2: interrupt acknowledge
 
 begin
 	-- I/O Connections assignments
@@ -283,25 +289,38 @@ begin
 	      -- start of added user logic for writing to slave registers
 	      else
 	        -- write output signals from UART module to slave registers
-	        slv_reg1(7 downto 0) <= uart_r_data;
+	        slv_reg0(7 downto 0) <= uart_r_data;
             slv_reg2(0) <= uart_rx_empty;
             slv_reg2(1) <= uart_tx_full;
             
             -- wr_uart and rd_uart pulse generation
-            if slv_reg3(0) = '1' and slv_reg2(1) = '0' then
+            if slv_reg3(1) = '1' and slv_reg2(1) = '0' then
               -- wr_uart was set to 1 and TX is not full
               uart_wr_uart <= '1';
-              slv_reg3(0) <= '0';
+              slv_reg3(1) <= '0';
             else
               uart_wr_uart <= '0';
             end if;
-            if slv_reg3(1) = '1' then
+            if slv_reg3(0) = '1' then
               -- rd_uart was set to 1
               uart_rd_uart <= '1';
               slv_reg3(0) <= '0';
             else
               uart_rd_uart <= '0';
             end if;
+            
+            -- setting and clearing intr status
+            if slv_reg3(2) = '1' then
+              -- intr ack was set to 1
+              if slv_reg2(2) = '1' then
+                -- intr status is 1
+                slv_reg2(2) <= '0'; -- set intr status to 0
+              end if;
+              slv_reg3(2) <= '0'; -- set intr ack to 0
+            elsif intr_det = '1' then
+              slv_reg2(2) <= '1'; -- set intr status to 1
+            end if;
+            
 	      -- end of added user logic for writing to slave registers
 	      end if;
 	    end if;
@@ -428,13 +447,12 @@ begin
 
 
 	-- Add user logic here
-	
-	-- UART mapping to registers
+    -- UART mapping to registers
     
-    -- slv_reg0 - w_data (bit 7 to bit 0)
-    -- slv_reg1 - r_data (bit 7 to bit 0)
-    -- slv_reg2 - status register; bit 0: rx_empty, bit 1: tx_full
-    -- slv_reg3 - control register; bit 0: wr_uart, bit 1: rd_uart
+    -- slv_reg0 - r_data (bit 7 to bit 0)
+    -- slv_reg1 - w_data (bit 7 to bit 0)
+    -- slv_reg2 - status register; bit 0: rx_empty, bit 1: tx_full, bit 2: interrupt status
+    -- slv_reg3 - control register; bit 0: rd_uart, bit 1: wr_uart, bit 2: interrupt acknowledge
 	
     FULL_UART_inst: entity work.FULL_UART
     PORT MAP(
@@ -450,8 +468,26 @@ begin
         TX_FULL => uart_tx_full
     );
     
-    uart_w_data <= slv_reg0(7 downto 0); -- data to send via TX
+    uart_w_data <= slv_reg1(7 downto 0); -- data to send via TX
+	irq <= slv_reg2(2); -- irq generation
     
+    -- detecting rising/falling edge for rx empty and tx full
+    process(S_AXI_ACLK)
+    begin
+      if rising_edge(S_AXI_ACLK) then
+        -- edge detection
+        if (uart_tx_full = '1' and uart_tx_full_prev = '0') or
+           (uart_rx_empty = '0' and uart_rx_empty_prev = '1') then
+          intr_det <= '1';
+        else
+          intr_det <= '0';
+        end if;
+        -- save previous state
+        uart_tx_full_prev <= uart_tx_full;
+        uart_rx_empty_prev <= uart_rx_empty;
+      end if;
+    end process;
+	
 	-- User logic ends
 
 end arch_imp;
