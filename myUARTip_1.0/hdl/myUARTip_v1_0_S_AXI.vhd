@@ -476,8 +476,8 @@ begin
     begin
       if rising_edge(S_AXI_ACLK) then
         -- edge detection
-        if (uart_tx_full = '1' and uart_tx_full_prev = '0') or
-           (uart_rx_empty = '0' and uart_rx_empty_prev = '1') then
+        if (uart_tx_full_prev = '1' and uart_tx_full = '0') or
+           (uart_rx_empty_prev = '1' and uart_rx_empty = '0') then
           intr_det <= '1';
         else
           intr_det <= '0';
