@@ -1,23 +1,5 @@
-/*  myuart.c - The simplest kernel module.
-
-* Copyright (C) 2013 - 2016 Xilinx, Inc
-*
-*   This program is free software; you can redistribute it and/or modify
-*   it under the terms of the GNU General Public License as published by
-*   the Free Software Foundation; either version 2 of the License, or
-*   (at your option) any later version.
-
-*   This program is distributed in the hope that it will be useful,
-*   but WITHOUT ANY WARRANTY; without even the implied warranty of
-*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*   GNU General Public License for more details.
-*
-*   You should have received a copy of the GNU General Public License along
-*   with this program. If not, see <http://www.gnu.org/licenses/>.
-
-*/
-
-/* myUART register map
+/*
+ * myUART register map
  * SLV_REG0[7:0] = RX DATA
  * SLV_REG1[7:0] = TX DATA
  * SLV_REG2[0] = RX_EMPTY
@@ -35,101 +17,237 @@
 #include <linux/io.h>
 #include <linux/interrupt.h>
 #include <linux/types.h>
+#include <linux/kfifo.h>
+#include <linux/semaphore.h>
+#include <linux/uaccess.h>
+#include <linux/miscdevice.h>
 
 #include <linux/of_address.h>
 #include <linux/of_device.h>
 #include <linux/of_platform.h>
 
-/* Standard module information, edit as appropriate */
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR
-    ("tb1094");
-MODULE_DESCRIPTION
-    ("myuart - driver for custom uart ip");
-
+MODULE_AUTHOR("tb1094");
+MODULE_DESCRIPTION("myuart - driver for custom uart ip");
 
 #define DRIVER_NAME "myuart"
-#define DRIVER_VERSION "v0.5.1"
+#define DRIVER_VERSION "v0.6.0"
 MODULE_INFO(version, DRIVER_VERSION);
 
-// 32 bit slave registers
+// 32 bit slave registers so offset is 4
 #define REG_LEN 4
+// size of fifo buffers
+#define FIFO_SIZE 256
+#define DBG_SIZE 512
+
+static DECLARE_KFIFO(debug_log, char, DBG_SIZE); // debug fifo
 
 struct myuart_local {
 	int irq;
 	unsigned long mem_start;
 	unsigned long mem_end;
 	void __iomem *base_addr;
+	struct semaphore semaphore; // semaphore for ensuring only one process is accessing at a time
+	DECLARE_KFIFO(fifo_rx, u8, FIFO_SIZE); // macro for struct kfifo
+	DECLARE_KFIFO(fifo_tx, u8, FIFO_SIZE); // macro for struct kfifo
+	spinlock_t slock; // spinlock for myuart_snd
+	struct miscdevice miscdev; // misc device for registering as character device
 };
 
-static struct myuart_local* myuart_info = NULL;
 
-void myuart_snd(void) {
-	// hard code data for testing
-	u8 bytedata = 'x';
+/*******************************************************
+ *************** myUART helper functions ***************
+ ******************************************************/
+
+// send byte from kfifo buffer
+void myuart_snd(struct myuart_local *lp) {
 	u32 sreg3_data;
+	u8 bytedata;
+	size_t n = kfifo_len(&lp->fifo_tx);
 
-	if (myuart_info == NULL) {
-		printk("myuart_info is NULL!\n");
+	// check if buffer is empty
+	if (n == 0) {
 		return;
 	}
 
-	// write data to tx data register
-	iowrite32((u32) bytedata, myuart_info->base_addr + REG_LEN*1);
-	printk("wrote data to tx data register\n");
+	// load value from buffer
+	kfifo_out(&lp->fifo_tx, &bytedata, 1);
+
+	// write data to myuart tx data register
+	iowrite32((u32) bytedata, lp->base_addr + REG_LEN*1);
+
 	// set WR_UART bit to 1
-	sreg3_data = ioread32(myuart_info->base_addr + REG_LEN*3);
-	iowrite32(sreg3_data | (1 << 1), myuart_info->base_addr + REG_LEN*3);
-	printk("set WR_UART bit to 1\n");
+	sreg3_data = ioread32(lp->base_addr + REG_LEN*3);
+	iowrite32(sreg3_data | (1 << 1), lp->base_addr + REG_LEN*3);
+}
+
+void myuart_rcv(struct myuart_local *lp) {
+	u32 sreg3_data;
+	u32 sreg0_data;
+
+	// check if rx buffer is full
+	if (kfifo_is_full(&lp->fifo_rx)) {
+		return;
+	}
+
+	// read data from myuart rx data register
+	sreg0_data = ioread32(lp->base_addr + REG_LEN*0);
+
+	// load value into buffer
+	kfifo_in(&lp->fifo_rx, (u8*)&sreg0_data, 1);
+
+	// set RD_UART bit to 1
+	sreg3_data = ioread32(lp->base_addr + REG_LEN*3);
+	iowrite32(sreg3_data | (1 << 0), lp->base_addr + REG_LEN*3);
 }
 
 // print slave regs for debugging
-void myuart_print_regs(void) {
+void myuart_print_regs(struct myuart_local *lp) {
 	unsigned int sreg0_data, sreg1_data, sreg2_data, sreg3_data;
 
-	if (myuart_info == NULL) {
-		printk("myuart_info is NULL!\n");
-		return;
-	}
+	sreg0_data = ioread32(lp->base_addr + REG_LEN*0);
+	sreg1_data = ioread32(lp->base_addr + REG_LEN*1);
+	sreg2_data = ioread32(lp->base_addr + REG_LEN*2);
+	sreg3_data = ioread32(lp->base_addr + REG_LEN*3);
 
-	sreg0_data = ioread32(myuart_info->base_addr + REG_LEN*0);
-	sreg1_data = ioread32(myuart_info->base_addr + REG_LEN*1);
-	sreg2_data = ioread32(myuart_info->base_addr + REG_LEN*2);
-	sreg3_data = ioread32(myuart_info->base_addr + REG_LEN*3);
-
-	printk("SLV_REG0: 0x%08x\n", sreg0_data);
-	printk("SLV_REG1: 0x%08x\n", sreg1_data);
-	printk("SLV_REG2: 0x%08x\n", sreg2_data);
-	printk("SLV_REG3: 0x%08x\n", sreg3_data);
+	printk("R0: 0x%08x\nR1: 0x%08x\nR2: 0x%08x\nR3: 0x%08x\n",
+				 sreg0_data, sreg1_data, sreg2_data, sreg3_data);
 }
 
-/* Simple example of how to receive command line parameters to your module.
-   Delete if you don't need them */
-unsigned myint = 0xdeadbeef;
-char *mystr = "default";
 
-module_param(myint, uint, S_IRUGO);
-module_param(mystr, charp, S_IRUGO);
+/*******************************************************
+ ************* myUART chardevice functions *************
+ ******************************************************/
+
+
+static int myuart_open(struct inode *inode, struct file *file)
+{
+	struct miscdevice *mdev = file->private_data;
+	struct myuart_local *lp = container_of(mdev, struct myuart_local, miscdev);
+	printk(KERN_INFO "myuart_open(%p)\n", file);
+
+	if (down_trylock(&lp->semaphore)) {
+		return -EBUSY;
+	}
+
+	// debugging
+	//kfifo_reset(&debug_log);
+
+	file->private_data = lp;
+
+	try_module_get(THIS_MODULE);
+	return 0;
+}
+
+static int myuart_release(struct inode *inode, struct file *file)
+{
+	/*
+	char out[DBG_SIZE];
+	int len;
+	*/
+	struct myuart_local *lp = file->private_data;
+	printk(KERN_INFO "myuart_release(%p,%p)\n", inode, file);
+
+	up(&lp->semaphore);
+
+	/* print debug info
+	while (!kfifo_is_empty(&debug_log)) {
+		len = kfifo_out(&debug_log, out, sizeof(out) - 1);
+		out[len] = '\0';
+		printk(KERN_INFO "%s", out);
+	}
+	*/
+
+	module_put(THIS_MODULE);
+	return 0;
+}
+
+static ssize_t myuart_read(struct file *file, char __user * buffer, size_t length, loff_t * offset)
+{
+	struct myuart_local *lp = file->private_data;
+	u8 read_data[FIFO_SIZE];
+	u32 ret;
+	size_t num_of_elems = kfifo_len(&lp->fifo_rx);
+	if (length > num_of_elems && num_of_elems > 0) {
+		kfifo_out(&lp->fifo_rx, read_data, num_of_elems);
+		ret = copy_to_user(buffer, read_data, num_of_elems);
+		if (ret < 0) {
+			return ret;
+		}
+		return num_of_elems;
+	}
+	return 0;
+}
+
+static ssize_t myuart_write(struct file *file, const char __user * buffer, size_t length, loff_t * offset)
+{
+	struct myuart_local *lp = file->private_data;
+	unsigned long flags;
+	u8 write_data[FIFO_SIZE];
+	u32 ret;
+	size_t available = kfifo_avail(&lp->fifo_tx);
+	if (length < available && available > 0) {
+		ret = copy_from_user(write_data, buffer, length);
+		if (ret < 0) {
+			return ret;
+		}
+		kfifo_in(&lp->fifo_tx, write_data, length);
+
+		// lock and disable interrupts because snd function is called in ISR too
+		spin_lock_irqsave(&lp->slock, flags);
+		// we have to call snd to kickstart the process of sending in case of no interrupts
+		myuart_snd(lp);
+		spin_unlock_irqrestore(&lp->slock, flags);
+
+		return length;
+	}
+	return 0;
+}
+
+struct file_operations Fops = {
+	.owner = THIS_MODULE,
+	.read = myuart_read,
+	.write = myuart_write,
+	.open = myuart_open,
+	.release = myuart_release,
+};
+
+
+/*******************************************************
+ ***************** myUART ISR function *****************
+ ******************************************************/
+
 
 static irqreturn_t myuart_irq(int irq, void *dev_id)
 {
-	unsigned int status, sreg3_data;
+	u32 sreg3_data, sreg2_data;
+	struct myuart_local *lp;
 
-	printk("myuart interrupt\n");
+	lp = (struct myuart_local*) dev_id;
+	//myuart_print_regs(lp);
 
-	if (myuart_info == NULL) {
-		printk("myuart_info is NULL!\n");
-		return IRQ_HANDLED;
+	sreg2_data = ioread32(lp->base_addr + REG_LEN*2);
+	if ((sreg2_data & (1 << 0)) == 0) {
+		// rx is full - there is new data to read
+		myuart_rcv(lp);
+	}
+	if ((sreg2_data & (1 << 1)) == 0) {
+		// tx is empty - we can send more data
+		myuart_snd(lp);
 	}
 
-	status = ioread32(myuart_info->base_addr + REG_LEN*2);
-	printk("STATUS REGISTER: 0x%08x\n", status);
-
 	// set intr_ack bit to 1
-	sreg3_data = ioread32(myuart_info->base_addr + REG_LEN*3);
-	iowrite32(sreg3_data | (1 << 2), myuart_info->base_addr + REG_LEN*3);
+	sreg3_data = ioread32(lp->base_addr + REG_LEN*3);
+	iowrite32(sreg3_data | (1 << 2), lp->base_addr + REG_LEN*3);
+
 	return IRQ_HANDLED;
 }
+
+
+/*******************************************************
+ ********** myUART platform driver functions ***********
+ ******************************************************/
+
 
 static int myuart_probe(struct platform_device *pdev)
 {
@@ -146,7 +264,7 @@ static int myuart_probe(struct platform_device *pdev)
 		dev_err(dev, "invalid address\n");
 		return -ENODEV;
 	}
-	lp = (struct myuart_local *) kmalloc(sizeof(struct myuart_local), GFP_KERNEL);
+	lp = (struct myuart_local *) kzalloc(sizeof(struct myuart_local), GFP_KERNEL);
 	if (!lp) {
 		dev_err(dev, "Cound not allocate myuart device\n");
 		return -ENOMEM;
@@ -182,7 +300,28 @@ static int myuart_probe(struct platform_device *pdev)
 	}
 	lp->irq = r_irq->start;
 
-	myuart_info = lp;
+	// initialize semaphore
+	sema_init(&lp->semaphore, 1);
+
+	// initialize fifo buffers
+	INIT_KFIFO(lp->fifo_rx);
+	INIT_KFIFO(lp->fifo_tx);
+
+	//initialize spinlock
+	spin_lock_init(&lp->slock);
+
+	// set up misc device
+	lp->miscdev.minor = MISC_DYNAMIC_MINOR;
+	lp->miscdev.name = "myuart";
+	lp->miscdev.fops = &Fops;
+	lp->miscdev.parent = dev;
+	lp->miscdev.mode = 0666;
+
+	rc = misc_register(&lp->miscdev);
+
+	if (rc) {
+		printk("misc_register failed\n");
+	}
 
 	rc = request_irq(lp->irq, &myuart_irq, 0, DRIVER_NAME, lp);
 	if (rc) {
@@ -213,6 +352,9 @@ static int myuart_remove(struct platform_device *pdev)
 	free_irq(lp->irq, lp);
 	iounmap(lp->base_addr);
 	release_mem_region(lp->mem_start, lp->mem_end - lp->mem_start + 1);
+
+	misc_deregister(&lp->miscdev);
+
 	kfree(lp);
 	dev_set_drvdata(dev, NULL);
 	return 0;
@@ -239,11 +381,17 @@ static struct platform_driver myuart_driver = {
 	.remove		= myuart_remove,
 };
 
+
+/******************************************************
+ ************* myUART init/exit functions *************
+ *****************************************************/
+
+
 static int __init myuart_init(void)
 {
 	int retval;
-	printk("<1>Hello module world.\n");
-	//printk("<1>Module parameters were (0x%08x) and \"%s\"\n", myint, mystr);
+	printk("Hello module world.\n");
+	//printk("Module parameters were (0x%08x) and \"%s\"\n", myint, mystr);
 
 	retval = platform_driver_register(&myuart_driver);
 
@@ -252,10 +400,8 @@ static int __init myuart_init(void)
 		return retval;
 	}
 
-	myuart_print_regs();
-
-	// test interrupts
-	myuart_snd();
+	// debugging
+	//INIT_KFIFO(debug_log);
 
 	return retval;
 }
