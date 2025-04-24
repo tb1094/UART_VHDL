@@ -31,7 +31,7 @@ MODULE_AUTHOR("tb1094");
 MODULE_DESCRIPTION("myuart - driver for custom uart ip");
 
 #define DRIVER_NAME "myuart"
-#define DRIVER_VERSION "v0.6.0"
+#define DRIVER_VERSION "v1.0.0"
 MODULE_INFO(version, DRIVER_VERSION);
 
 // 32 bit slave registers so offset is 4
@@ -198,8 +198,6 @@ static ssize_t myuart_read(struct file *file, char __user * buffer, size_t lengt
 	return to_read;
 }
 
-// currently just either writes everything or nothing
-// should be upated to write partially
 static ssize_t myuart_write(struct file *file, const char __user * buffer, size_t length, loff_t * offset)
 {
 	struct myuart_local *lp = file->private_data;
@@ -207,29 +205,38 @@ static ssize_t myuart_write(struct file *file, const char __user * buffer, size_
 	unsigned long flags;
 	u8 write_data[TX_FIFO_SIZE];
 	ssize_t ret;
+	size_t to_write;
 	size_t available = kfifo_avail(&lp->fifo_tx);
 
-	if (length <= available && available > 0) {
-		ret = copy_from_user(write_data, buffer, length);
-		if (ret) {
-			return -EFAULT;
-		}
-		kfifo_in(&lp->fifo_tx, write_data, length);
-
-		// lock and disable interrupts because this code sequence is executed in ISR too
-		spin_lock_irqsave(&lp->slock, flags);
-		// check if we should kickstart the sending
-		sreg2_data = ioread32(lp->base_addr + REG_LEN*2);
-		if ((sreg2_data & (1 << 1)) == 0) {
-			// tx is empty - we can send more data
-			myuart_snd(lp);
-		}
-		spin_unlock_irqrestore(&lp->slock, flags);
-
-		return length;
+	if (available == 0) {
+		return -EAGAIN;
 	}
-	printk(KERN_INFO "write: not enough available space in fifo_tx\n");
-	return -EAGAIN;
+
+	if (length == 0) {
+		return 0;
+	}
+
+	// limit write size to how much space is available
+	to_write = min(length, available);
+
+	ret = copy_from_user(write_data, buffer, to_write);
+	if (ret) {
+		return -EFAULT;
+	}
+
+	kfifo_in(&lp->fifo_tx, write_data, to_write);
+
+	// lock and disable interrupts because this code sequence is executed in ISR too
+	spin_lock_irqsave(&lp->slock, flags);
+	// check if we should kickstart the sending
+	sreg2_data = ioread32(lp->base_addr + REG_LEN*2);
+	if ((sreg2_data & (1 << 1)) == 0) {
+		// tx is empty - we can send more data
+		myuart_snd(lp);
+	}
+	spin_unlock_irqrestore(&lp->slock, flags);
+
+	return to_write;
 }
 
 struct file_operations Fops = {
