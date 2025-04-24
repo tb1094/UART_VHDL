@@ -37,10 +37,11 @@ MODULE_INFO(version, DRIVER_VERSION);
 // 32 bit slave registers so offset is 4
 #define REG_LEN 4
 // size of fifo buffers
-#define FIFO_SIZE 512
+#define RX_FIFO_SIZE 512
+#define TX_FIFO_SIZE 2048
 #define DBG_SIZE 512
 
-static DECLARE_KFIFO(debug_log, char, DBG_SIZE); // debug fifo
+//static DECLARE_KFIFO(debug_log, char, DBG_SIZE); // debug fifo
 
 struct myuart_local {
 	int irq;
@@ -48,8 +49,8 @@ struct myuart_local {
 	unsigned long mem_end;
 	void __iomem *base_addr;
 	struct semaphore semaphore; // semaphore for ensuring only one process is accessing at a time
-	DECLARE_KFIFO(fifo_rx, u8, FIFO_SIZE); // macro for struct kfifo
-	DECLARE_KFIFO(fifo_tx, u8, FIFO_SIZE); // macro for struct kfifo
+	DECLARE_KFIFO(fifo_rx, u8, RX_FIFO_SIZE); // macro for struct kfifo
+	DECLARE_KFIFO(fifo_tx, u8, TX_FIFO_SIZE); // macro for struct kfifo
 	spinlock_t slock; // spinlock for myuart_snd
 	wait_queue_head_t read_queue; // for blocking read() call
 	struct miscdevice miscdev; // misc device for registering as character device
@@ -171,7 +172,7 @@ static int myuart_release(struct inode *inode, struct file *file)
 static ssize_t myuart_read(struct file *file, char __user * buffer, size_t length, loff_t * offset)
 {
 	struct myuart_local *lp = file->private_data;
-	u8 read_data[FIFO_SIZE];
+	u8 read_data[RX_FIFO_SIZE];
 	ssize_t ret;
 	size_t to_read;
 
@@ -197,15 +198,17 @@ static ssize_t myuart_read(struct file *file, char __user * buffer, size_t lengt
 	return to_read;
 }
 
+// currently just either writes everything or nothing
+// should be upated to write partially
 static ssize_t myuart_write(struct file *file, const char __user * buffer, size_t length, loff_t * offset)
 {
 	struct myuart_local *lp = file->private_data;
 	u32 sreg2_data;
 	unsigned long flags;
-	u8 write_data[FIFO_SIZE];
+	u8 write_data[TX_FIFO_SIZE];
 	ssize_t ret;
 	size_t available = kfifo_avail(&lp->fifo_tx);
-	printk("write: fifo_tx available: %d\n", available);
+
 	if (length <= available && available > 0) {
 		ret = copy_from_user(write_data, buffer, length);
 		if (ret) {
@@ -225,8 +228,8 @@ static ssize_t myuart_write(struct file *file, const char __user * buffer, size_
 
 		return length;
 	}
-	printk("write: fifo_tx available too small\n");
-	return 0;
+	printk(KERN_INFO "write: not enough available space in fifo_tx\n");
+	return -EAGAIN;
 }
 
 struct file_operations Fops = {
