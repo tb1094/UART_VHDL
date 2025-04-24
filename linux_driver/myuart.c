@@ -37,7 +37,7 @@ MODULE_INFO(version, DRIVER_VERSION);
 // 32 bit slave registers so offset is 4
 #define REG_LEN 4
 // size of fifo buffers
-#define FIFO_SIZE 256
+#define FIFO_SIZE 512
 #define DBG_SIZE 512
 
 static DECLARE_KFIFO(debug_log, char, DBG_SIZE); // debug fifo
@@ -51,6 +51,7 @@ struct myuart_local {
 	DECLARE_KFIFO(fifo_rx, u8, FIFO_SIZE); // macro for struct kfifo
 	DECLARE_KFIFO(fifo_tx, u8, FIFO_SIZE); // macro for struct kfifo
 	spinlock_t slock; // spinlock for myuart_snd
+	wait_queue_head_t read_queue; // for blocking read() call
 	struct miscdevice miscdev; // misc device for registering as character device
 };
 
@@ -72,6 +73,7 @@ void myuart_snd(struct myuart_local *lp) {
 
 	// load value from buffer
 	kfifo_out(&lp->fifo_tx, &bytedata, 1);
+	//printk(KERN_INFO "s: 0x%02x\n", bytedata);
 
 	// write data to myuart tx data register
 	iowrite32((u32) bytedata, lp->base_addr + REG_LEN*1);
@@ -81,9 +83,9 @@ void myuart_snd(struct myuart_local *lp) {
 	iowrite32(sreg3_data | (1 << 1), lp->base_addr + REG_LEN*3);
 }
 
+// receive byte into kfifo buffer
 void myuart_rcv(struct myuart_local *lp) {
-	u32 sreg3_data;
-	u32 sreg0_data;
+	u32 sreg0_data, sreg3_data;
 
 	// check if rx buffer is full
 	if (kfifo_is_full(&lp->fifo_rx)) {
@@ -92,6 +94,7 @@ void myuart_rcv(struct myuart_local *lp) {
 
 	// read data from myuart rx data register
 	sreg0_data = ioread32(lp->base_addr + REG_LEN*0);
+	//printk(KERN_INFO "r: 0x%02x\n", sreg0_data & 0xFF);
 
 	// load value into buffer
 	kfifo_in(&lp->fifo_rx, (u8*)&sreg0_data, 1);
@@ -130,6 +133,9 @@ static int myuart_open(struct inode *inode, struct file *file)
 		return -EBUSY;
 	}
 
+	kfifo_reset(&lp->fifo_rx);
+	kfifo_reset(&lp->fifo_tx);
+
 	// debugging
 	//kfifo_reset(&debug_log);
 
@@ -166,41 +172,60 @@ static ssize_t myuart_read(struct file *file, char __user * buffer, size_t lengt
 {
 	struct myuart_local *lp = file->private_data;
 	u8 read_data[FIFO_SIZE];
-	u32 ret;
-	size_t num_of_elems = kfifo_len(&lp->fifo_rx);
-	if (length > num_of_elems && num_of_elems > 0) {
-		kfifo_out(&lp->fifo_rx, read_data, num_of_elems);
-		ret = copy_to_user(buffer, read_data, num_of_elems);
-		if (ret < 0) {
-			return ret;
+	ssize_t ret;
+	size_t to_read;
+
+	// no data in RX buffer?
+	if (kfifo_is_empty(&lp->fifo_rx)) {
+		// return -EAGAIN if the file is in non-blocking mode
+		if (file->f_flags & O_NONBLOCK) {
+			return -EAGAIN;
 		}
-		return num_of_elems;
+		// block until there's data
+		wait_event_interruptible(lp->read_queue, !kfifo_is_empty(&lp->fifo_rx));
 	}
-	return 0;
+
+	// limit read size to what's actually available
+	to_read = min(length, kfifo_len(&lp->fifo_rx));
+	kfifo_out(&lp->fifo_rx, read_data, to_read);
+
+	// copy to userspace
+	ret = copy_to_user(buffer, read_data, to_read);
+	if (ret) {
+		return -EFAULT;
+	}
+	return to_read;
 }
 
 static ssize_t myuart_write(struct file *file, const char __user * buffer, size_t length, loff_t * offset)
 {
 	struct myuart_local *lp = file->private_data;
+	u32 sreg2_data;
 	unsigned long flags;
 	u8 write_data[FIFO_SIZE];
-	u32 ret;
+	ssize_t ret;
 	size_t available = kfifo_avail(&lp->fifo_tx);
-	if (length < available && available > 0) {
+	printk("write: fifo_tx available: %d\n", available);
+	if (length <= available && available > 0) {
 		ret = copy_from_user(write_data, buffer, length);
-		if (ret < 0) {
-			return ret;
+		if (ret) {
+			return -EFAULT;
 		}
 		kfifo_in(&lp->fifo_tx, write_data, length);
 
-		// lock and disable interrupts because snd function is called in ISR too
+		// lock and disable interrupts because this code sequence is executed in ISR too
 		spin_lock_irqsave(&lp->slock, flags);
-		// we have to call snd to kickstart the process of sending in case of no interrupts
-		myuart_snd(lp);
+		// check if we should kickstart the sending
+		sreg2_data = ioread32(lp->base_addr + REG_LEN*2);
+		if ((sreg2_data & (1 << 1)) == 0) {
+			// tx is empty - we can send more data
+			myuart_snd(lp);
+		}
 		spin_unlock_irqrestore(&lp->slock, flags);
 
 		return length;
 	}
+	printk("write: fifo_tx available too small\n");
 	return 0;
 }
 
@@ -230,6 +255,8 @@ static irqreturn_t myuart_irq(int irq, void *dev_id)
 	if ((sreg2_data & (1 << 0)) == 0) {
 		// rx is full - there is new data to read
 		myuart_rcv(lp);
+		// wake up blocking read call because there is new data
+		wake_up_interruptible(&lp->read_queue);
 	}
 	if ((sreg2_data & (1 << 1)) == 0) {
 		// tx is empty - we can send more data
@@ -309,6 +336,9 @@ static int myuart_probe(struct platform_device *pdev)
 
 	//initialize spinlock
 	spin_lock_init(&lp->slock);
+
+	// initialize read queue
+	init_waitqueue_head(&lp->read_queue);
 
 	// set up misc device
 	lp->miscdev.minor = MISC_DYNAMIC_MINOR;
