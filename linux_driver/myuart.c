@@ -10,6 +10,7 @@
  * SLV_REG3[2] = intr_ack
 */
 
+#include "asm-generic/fcntl.h"
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/module.h>
@@ -48,7 +49,8 @@ struct myuart_local {
 	unsigned long mem_start;
 	unsigned long mem_end;
 	void __iomem *base_addr;
-	struct semaphore semaphore; // semaphore for ensuring only one process is accessing at a time
+	struct semaphore r_semaphore; // read semaphore
+	struct semaphore w_semaphore; // write semaphore
 	DECLARE_KFIFO(fifo_rx, u8, RX_FIFO_SIZE); // macro for struct kfifo
 	DECLARE_KFIFO(fifo_tx, u8, TX_FIFO_SIZE); // macro for struct kfifo
 	spinlock_t slock; // spinlock for myuart_snd
@@ -128,10 +130,28 @@ static int myuart_open(struct inode *inode, struct file *file)
 {
 	struct miscdevice *mdev = file->private_data;
 	struct myuart_local *lp = container_of(mdev, struct myuart_local, miscdev);
+	int access_mode = file->f_flags & O_ACCMODE;
 	printk(KERN_INFO "myuart_open(%p)\n", file);
 
-	if (down_trylock(&lp->semaphore)) {
-		return -EBUSY;
+	// only allow one reader and one writer at a time
+	// why: one writer is fairly obvious, we don't want two different streams of data
+	// one reader is because when data is read, it is gone (set to be overwritten)
+	// there is no mechanism to store data for multiple reads
+	if (access_mode == O_RDWR) {
+		if (down_trylock(&lp->r_semaphore)) {
+			return -EBUSY;
+		}
+		if (down_trylock(&lp->w_semaphore)) {
+			return -EBUSY;
+		}
+	} else if (access_mode == O_RDONLY) {
+		if (down_trylock(&lp->r_semaphore)) {
+			return -EBUSY;
+		}
+	} else if (access_mode == O_WRONLY) {
+		if (down_trylock(&lp->w_semaphore)) {
+			return -EBUSY;
+		}
 	}
 
 	kfifo_reset(&lp->fifo_rx);
@@ -153,9 +173,17 @@ static int myuart_release(struct inode *inode, struct file *file)
 	int len;
 	*/
 	struct myuart_local *lp = file->private_data;
+	int access_mode = file->f_flags & O_ACCMODE;
 	printk(KERN_INFO "myuart_release(%p,%p)\n", inode, file);
 
-	up(&lp->semaphore);
+	if (access_mode == O_RDWR) {
+		up(&lp->r_semaphore);
+		up(&lp->w_semaphore);
+	} else if (access_mode == O_RDONLY) {
+		up(&lp->r_semaphore);
+	} else if (access_mode == O_WRONLY) {
+		up(&lp->w_semaphore);
+	}
 
 	/* print debug info
 	while (!kfifo_is_empty(&debug_log)) {
@@ -337,8 +365,9 @@ static int myuart_probe(struct platform_device *pdev)
 	}
 	lp->irq = r_irq->start;
 
-	// initialize semaphore
-	sema_init(&lp->semaphore, 1);
+	// initialize semaphores
+	sema_init(&lp->r_semaphore, 1);
+	sema_init(&lp->w_semaphore, 1);
 
 	// initialize fifo buffers
 	INIT_KFIFO(lp->fifo_rx);
