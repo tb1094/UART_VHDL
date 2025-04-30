@@ -288,7 +288,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>ca732bb0</spirit:value>
+            <spirit:value>9ccb3d94</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -304,7 +304,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>ca732bb0</spirit:value>
+            <spirit:value>9ccb3d94</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -961,8 +961,8 @@
         <xilinx:taxonomy>AXI_Peripheral</xilinx:taxonomy>
       </xilinx:taxonomies>
       <xilinx:displayName>myUARTip_v1.0</xilinx:displayName>
-      <xilinx:coreRevision>5</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2025-04-07T13:17:46Z</xilinx:coreCreationDateTime>
+      <xilinx:coreRevision>7</xilinx:coreRevision>
+      <xilinx:coreCreationDateTime>2025-04-30T08:37:11Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
         <xilinx:tag xilinx:name="ui.data.coregen.df@47ddda87_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
         <xilinx:tag xilinx:name="ui.data.coregen.df@38b143c9_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
@@ -1016,13 +1016,37 @@
         <xilinx:tag xilinx:name="ui.data.coregen.df@62b95c08_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
         <xilinx:tag xilinx:name="ui.data.coregen.df@5cdfbe75_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
         <xilinx:tag xilinx:name="ui.data.coregen.df@62e9c7cd_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@482044f7_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@11024af1_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@1cb187bf_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@55789853_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@1d14b87d_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@50074827_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@60abc6f0_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@36942d7c_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@61e60409_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@6ae7c357_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@88998d4_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@59329412_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@5a62a549_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@1f9b5233_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@5be1926e_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@1ac1576e_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@7ed7c727_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@3ca0326_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@311d7b2f_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@5695c3e9_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@7f9b91c5_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@d82dad9_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@68307c32_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@6f812c0a_ARCHIVE_LOCATION">/home/tilen/praksa/ip_repo/myUARTip_1.0</xilinx:tag>
       </xilinx:tags>
     </xilinx:coreExtensions>
     <xilinx:packagingInfo>
       <xilinx:xilinxVersion>2021.2</xilinx:xilinxVersion>
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="24c0bd87"/>
       <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="c30980da"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="07d0e679"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="8608d7b2"/>
       <xilinx:checksum xilinx:scope="ports" xilinx:value="57923383"/>
       <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="f9a38560"/>
       <xilinx:checksum xilinx:scope="parameters" xilinx:value="1bcb5f62"/>

@@ -34,7 +34,7 @@ use IEEE.std_logic_unsigned.ALL;
 --use UNISIM.VComponents.all;
 
 entity CLK_DIVIDER_RX is
-    Generic ( divider : NATURAL := 10416; -- 9600 baud
+    Generic ( divider : NATURAL := 5208; -- 19200 baud
 	          size : NATURAL := 16 );
     Port ( CLK : in STD_LOGIC;
            RST : in STD_LOGIC;
