@@ -10,7 +10,6 @@
  * SLV_REG3[2] = intr_ack
 */
 
-#include "asm-generic/fcntl.h"
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/module.h>
@@ -22,6 +21,7 @@
 #include <linux/semaphore.h>
 #include <linux/uaccess.h>
 #include <linux/miscdevice.h>
+#include <linux/poll.h>
 
 #include <linux/of_address.h>
 #include <linux/of_device.h>
@@ -32,7 +32,7 @@ MODULE_AUTHOR("tb1094");
 MODULE_DESCRIPTION("myuart - driver for custom uart ip");
 
 #define DRIVER_NAME "myuart"
-#define DRIVER_VERSION "v1.0.0"
+#define DRIVER_VERSION "v1.0.1"
 MODULE_INFO(version, DRIVER_VERSION);
 
 // 32 bit slave registers so offset is 4
@@ -53,8 +53,10 @@ struct myuart_local {
 	struct semaphore w_semaphore; // write semaphore
 	DECLARE_KFIFO(fifo_rx, u8, RX_FIFO_SIZE); // macro for struct kfifo
 	DECLARE_KFIFO(fifo_tx, u8, TX_FIFO_SIZE); // macro for struct kfifo
-	spinlock_t slock; // spinlock for myuart_snd
-	wait_queue_head_t read_queue; // for blocking read() call
+	spinlock_t r_slock; // read spinlock
+	spinlock_t w_slock; // write spinlock
+	wait_queue_head_t r_queue; // for blocking read() call
+	wait_queue_head_t w_queue; // for blocking write() call
 	struct miscdevice miscdev; // misc device for registering as character device
 };
 
@@ -134,8 +136,8 @@ static int myuart_open(struct inode *inode, struct file *file)
 	printk(KERN_INFO "myuart_open(%p)\n", file);
 
 	// only allow one reader and one writer at a time
-	// why: one writer is fairly obvious, we don't want two different streams of data
-	// one reader is because when data is read, it is gone (set to be overwritten)
+	// one writer because we don't want two different streams of data
+	// one reader because when data is read, it is gone (set to be overwritten)
 	// there is no mechanism to store data for multiple reads
 	if (access_mode == O_RDWR) {
 		if (down_trylock(&lp->r_semaphore)) {
@@ -154,9 +156,6 @@ static int myuart_open(struct inode *inode, struct file *file)
 		}
 	}
 
-	kfifo_reset(&lp->fifo_rx);
-	kfifo_reset(&lp->fifo_tx);
-
 	// debugging
 	//kfifo_reset(&debug_log);
 
@@ -173,6 +172,7 @@ static int myuart_release(struct inode *inode, struct file *file)
 	int len;
 	*/
 	struct myuart_local *lp = file->private_data;
+	unsigned long flags;
 	int access_mode = file->f_flags & O_ACCMODE;
 	printk(KERN_INFO "myuart_release(%p,%p)\n", inode, file);
 
@@ -184,6 +184,12 @@ static int myuart_release(struct inode *inode, struct file *file)
 	} else if (access_mode == O_WRONLY) {
 		up(&lp->w_semaphore);
 	}
+
+	// process is closing the file so we clean up after them
+	// fifo_tx should be left alone because we don't want to cancel sending data
+	spin_lock_irqsave(&lp->r_slock, flags);
+	kfifo_reset(&lp->fifo_rx);
+	spin_unlock_irqrestore(&lp->r_slock, flags);
 
 	/* print debug info
 	while (!kfifo_is_empty(&debug_log)) {
@@ -211,7 +217,9 @@ static ssize_t myuart_read(struct file *file, char __user * buffer, size_t lengt
 			return -EAGAIN;
 		}
 		// block until there's data
-		wait_event_interruptible(lp->read_queue, !kfifo_is_empty(&lp->fifo_rx));
+		if (wait_event_interruptible(lp->r_queue, !kfifo_is_empty(&lp->fifo_rx))) {
+			return -ERESTARTSYS;
+		}
 	}
 
 	// limit read size to what's actually available
@@ -236,12 +244,19 @@ static ssize_t myuart_write(struct file *file, const char __user * buffer, size_
 	size_t to_write;
 	size_t available = kfifo_avail(&lp->fifo_tx);
 
-	if (available == 0) {
-		return -EAGAIN;
-	}
-
 	if (length == 0) {
 		return 0;
+	}
+
+	if (available == 0) {
+		// return -EAGAIN if the file is in non-blocking mode
+		if (file->f_flags & O_NONBLOCK) {
+			return -EAGAIN;
+		}
+		// block until there's space
+		if (wait_event_interruptible(lp->w_queue, !kfifo_is_full(&lp->fifo_rx))) {
+			return -ERESTARTSYS;
+		}
 	}
 
 	// limit write size to how much space is available
@@ -255,17 +270,38 @@ static ssize_t myuart_write(struct file *file, const char __user * buffer, size_
 	kfifo_in(&lp->fifo_tx, write_data, to_write);
 
 	// lock and disable interrupts because this code sequence is executed in ISR too
-	spin_lock_irqsave(&lp->slock, flags);
+	spin_lock_irqsave(&lp->w_slock, flags);
 	// check if we should kickstart the sending
 	sreg2_data = ioread32(lp->base_addr + REG_LEN*2);
 	if ((sreg2_data & (1 << 1)) == 0) {
 		// tx is empty - we can send more data
 		myuart_snd(lp);
 	}
-	spin_unlock_irqrestore(&lp->slock, flags);
+	spin_unlock_irqrestore(&lp->w_slock, flags);
 
 	return to_write;
 }
+
+static unsigned int myuart_poll(struct file *file, poll_table *wait)
+{
+	struct myuart_local *lp = file->private_data;
+	unsigned int mask = 0;
+
+	// add queues to poll table
+	poll_wait(file, &lp->r_queue, wait);
+	poll_wait(file, &lp->w_queue, wait);
+
+	if (!kfifo_is_empty(&lp->fifo_rx)) {
+		mask |= POLLIN | POLLRDNORM;  // readable
+	}
+
+	if (!kfifo_is_full(&lp->fifo_tx)) {
+		mask |= POLLOUT | POLLWRNORM; // writable
+	}
+
+	return mask;
+}
+
 
 struct file_operations Fops = {
 	.owner = THIS_MODULE,
@@ -273,6 +309,7 @@ struct file_operations Fops = {
 	.write = myuart_write,
 	.open = myuart_open,
 	.release = myuart_release,
+	.poll = myuart_poll,
 };
 
 
@@ -294,11 +331,13 @@ static irqreturn_t myuart_irq(int irq, void *dev_id)
 		// rx is full - there is new data to read
 		myuart_rcv(lp);
 		// wake up blocking read call because there is new data
-		wake_up_interruptible(&lp->read_queue);
+		wake_up_interruptible(&lp->r_queue);
 	}
 	if ((sreg2_data & (1 << 1)) == 0) {
 		// tx is empty - we can send more data
 		myuart_snd(lp);
+		// wake up blocking write call because there is space
+		wake_up_interruptible(&lp->w_queue);
 	}
 
 	// set intr_ack bit to 1
@@ -374,10 +413,12 @@ static int myuart_probe(struct platform_device *pdev)
 	INIT_KFIFO(lp->fifo_tx);
 
 	//initialize spinlock
-	spin_lock_init(&lp->slock);
+	spin_lock_init(&lp->r_slock);
+	spin_lock_init(&lp->w_slock);
 
-	// initialize read queue
-	init_waitqueue_head(&lp->read_queue);
+	// initialize read and write queue
+	init_waitqueue_head(&lp->r_queue);
+	init_waitqueue_head(&lp->w_queue);
 
 	// set up misc device
 	lp->miscdev.minor = MISC_DYNAMIC_MINOR;
