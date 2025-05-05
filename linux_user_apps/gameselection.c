@@ -15,7 +15,10 @@ const char *choices[] = {
   "nPush",
   "Battleships",
   "Greed",
-  "Pong"
+  "Pong",
+  "Ambassador of Pain",
+  "Galaxis",
+  "Mogria's Snake"
 };
 
 int main() {
@@ -138,6 +141,55 @@ int main() {
         if (pid == 0) { // child process
           execl("./pong-0.1.0/pong", "./pong-0.1.0/pong", NULL);
           perror("execl failed for pong");
+          _exit(EXIT_FAILURE);
+        } else if (pid > 0) { // parent process
+          int status;
+          waitpid(pid, &status, 0);
+          nc_setup();
+          clear();
+          refresh();
+        }
+        break;
+      case 5:
+        endwin();
+        pid = fork();
+        if (pid == 0) { // child process
+          if (chdir("./aop-0.6/") != 0) {
+            perror("chdir failed for aop");
+            return 1;
+          }
+          execl("./aop", "./aop", "aop-level-03.txt", NULL);
+          perror("execl failed for aop");
+          _exit(EXIT_FAILURE);
+        } else if (pid > 0) { // parent process
+          int status;
+          waitpid(pid, &status, 0);
+          nc_setup();
+          clear();
+          refresh();
+        }
+        break;
+      case 6:
+        endwin();
+        pid = fork();
+        if (pid == 0) { // child process
+          execl("./galaxis-1.11/galaxis", "./galaxis-1.11/galaxis", NULL);
+          perror("execl failed for galaxis");
+          _exit(EXIT_FAILURE);
+        } else if (pid > 0) { // parent process
+          int status;
+          waitpid(pid, &status, 0);
+          nc_setup();
+          clear();
+          refresh();
+        }
+        break;
+      case 7:
+        endwin();
+        pid = fork();
+        if (pid == 0) { // child process
+          execl("./msnake/src/snake", "./msnake/src/snake", NULL);
+          perror("execl failed for msnake");
           _exit(EXIT_FAILURE);
         } else if (pid > 0) { // parent process
           int status;
