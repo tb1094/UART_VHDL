@@ -14,5 +14,6 @@ Contents:
   - src/: VHDL source files for the UART module
   - hdl/: AXI4-Lite wrappers
 - vitis_application/: test application written in Vitis for running on baremetal Zedboard (without Linux)
-- systemz_wrapper.xsa: XSA hardware file exported from Vivado for the fully connected Zedboard system
 - vt100-patched.src: terminfo file for the VT510 terminal (on VT100 emulation mode) that adds cursor visibilty
+- systemz_wrapper.xsa: XSA hardware file exported from Vivado from this block design:
+![Vivado block design](blockdesignz.png)
