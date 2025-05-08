@@ -8,6 +8,8 @@
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
+const char GAMEDIR[] = "/home/root/myuart/ncurses-games/";
+
 void nc_setup();
 int popup(const char*);
 
@@ -40,6 +42,10 @@ const char *choices[] = {
 
 int main() {
   nc_setup();
+  if (chdir(GAMEDIR) != 0) {
+    perror("chdir failed for gamedir");
+    return 1;
+  }
 
   int highlight = 0;
   int choice = -1;
